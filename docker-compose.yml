@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  k8s-dashboard-api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      # Kubernetes 설정
+      - K8S_TOKEN=${K8S_TOKEN}
+      - K8S_API=${K8S_API:-https://172.10.40.93:6443}
+      - VERIFY_SSL=${VERIFY_SSL:-false}
+      # 애플리케이션 설정
+      - DEBUG=${DEBUG:-false}
+      - HOST=${HOST:-0.0.0.0}  # Docker에서는 0.0.0.0 필요
+      - PORT=${PORT:-8000}
+    volumes:
+      - ./logs:/app/logs
+      - ./config:/app/config:ro  # 설정 파일 읽기 전용 마운트
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    env_file:
+      - config/env.example  # 환경변수 파일 사용 (선택사항)
