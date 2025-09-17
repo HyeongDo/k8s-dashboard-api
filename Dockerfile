@@ -26,10 +26,11 @@ ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
 
 # 기본 환경변수 설정 (docker-compose에서 오버라이드 가능)
+# Docker에서는 0.0.0.0 필요 (컨테이너 외부 접근을 위해)
 ENV K8S_API=https://172.10.40.93:6443
 ENV VERIFY_SSL=false
 ENV DEBUG=false
-ENV HOST=0.0.0.0  # Docker에서는 0.0.0.0 필요
+ENV HOST=0.0.0.0
 ENV PORT=8000
 
 # 헬스체크 추가
