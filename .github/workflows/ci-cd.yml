@@ -30,8 +30,12 @@ jobs:
         pip install pytest pytest-cov
         
     - name: Run tests
+      env:
+        K8S_TOKEN: test-token
+        K8S_API: https://test-api:6443
+        VERIFY_SSL: false
       run: |
-        pytest tests/ --cov=app --cov-report=xml
+        pytest tests/ --cov=. --cov-report=xml
         
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
