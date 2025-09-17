@@ -17,6 +17,7 @@ services:
     volumes:
       - ./logs:/app/logs
       - ./config:/app/config:ro  # 설정 파일 읽기 전용 마운트
+      - ./secrets:/app/secrets:ro  # 민감정보 읽기 전용 마운트
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -25,4 +26,5 @@ services:
       retries: 3
       start_period: 40s
     env_file:
-      - config/env.example  # 환경변수 파일 사용 (선택사항)
+      - .env  # 환경변수 파일 사용
+      - secrets/secrets  # 민감정보 파일 사용

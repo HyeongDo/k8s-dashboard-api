@@ -66,8 +66,20 @@ logs/
 # Kubernetes
 token.txt
 *.kubeconfig
+kubeconfig
+*.pem
+*.key
+*.crt
+*.p12
 
 # Project specific
 config/.env
 .env.local
 .env.production
+.env.*
+!.env.example
+
+# Secrets
+secrets/
+*.secret
+*.secret.*

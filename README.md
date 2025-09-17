@@ -160,13 +160,30 @@ curl -X GET http://localhost:8000/nodes/{node-name}
 
 ## 보안 주의사항
 
-- Kubernetes 토큰은 환경변수로 관리하세요
-- 프로덕션 환경에서는 SSL 인증서 검증을 활성화하세요
-- 적절한 RBAC 권한을 설정하여 최소 권한 원칙을 따르세요
+### 🔒 민감정보 보호
+- **환경변수 사용**: 하드코딩 금지
+- **Git 제외**: `.env`, `secrets/` 폴더는 Git에 포함하지 않음
+- **파일 권한**: 민감정보 파일은 600 권한 설정
+- **토큰 관리**: Kubernetes 토큰은 환경변수로만 관리
+
+### 🛡️ 보안 설정
+- **SSL 인증서**: 프로덕션에서는 검증 활성화
+- **RBAC 권한**: 최소 권한 원칙 적용
 - **네트워크 보안**: 
   - 로컬 개발: `HOST=127.0.0.1` (localhost만 접근 가능)
   - Docker: `HOST=0.0.0.0` (컨테이너 외부 접근을 위해 필요)
   - 프로덕션: 방화벽과 리버스 프록시 사용 권장
+
+### 🔐 민감정보 설정 방법
+```bash
+# 1. 자동 설정 (권장)
+./scripts/setup-secrets.sh
+
+# 2. 수동 설정
+cp config/env.example .env
+cp config/secrets.example secrets/secrets
+chmod 600 .env secrets/secrets
+```
 
 ## Docker 사용법
 
@@ -196,18 +213,27 @@ docker-compose down
 
 ### 환경변수 파일 사용
 ```bash
-# .env 파일 생성
-cat > .env << EOF
+# 1. env.example을 복사해서 .env 파일 생성
+cp config/env.example .env
+
+# 2. .env 파일에 실제 값 입력
+nano .env
+
+# 3. Docker Compose 실행
+docker-compose up -d
+```
+
+### .env 파일 예시
+```env
+# Kubernetes API 설정
 K8S_API=https://172.10.40.93:6443
-K8S_TOKEN=your-kubernetes-token-here
+K8S_TOKEN=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...  # 실제 토큰
 VERIFY_SSL=false
+
+# 애플리케이션 설정
 DEBUG=false
 HOST=0.0.0.0
 PORT=8000
-EOF
-
-# Docker Compose 실행
-docker-compose up -d
 ```
 
 ## GitHub Actions CI/CD
