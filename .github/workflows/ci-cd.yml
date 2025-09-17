@@ -16,26 +16,30 @@ env:
 
 jobs:
   test:
-    runs-on: ubuntu-20.04
-    container: python:3.11-alpine
+    runs-on: ubuntu-latest
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
     - name: Install dependencies and run tests
       env:
         K8S_TOKEN: test-token
         K8S_API: https://test-api:6443
         VERIFY_SSL: false
       run: |
-        apk add --no-cache curl
-        pip install --no-cache-dir -r requirements.txt
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
         pytest tests/ -v --tb=short
 
   build-and-push:
     needs: test
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     
     permissions:
@@ -75,7 +79,7 @@ jobs:
 
   deploy:
     needs: build-and-push
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     
     steps:
