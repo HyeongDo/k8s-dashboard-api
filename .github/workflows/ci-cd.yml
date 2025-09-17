@@ -8,26 +8,26 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: brighr93/k8s-dashboard-api
+  IMAGE_NAME: ${{ github.repository_owner }}/k8s-dashboard-api
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    container: python:3.11-alpine
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
+    - name: Install system dependencies
+      run: |
+        apk update && apk add --no-cache curl
+        rm -rf /var/cache/apk/*
         
-    - name: Install dependencies
+    - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install pytest pytest-cov
         
     - name: Run tests
       env:
@@ -44,7 +44,7 @@ jobs:
 
   build-and-push:
     needs: test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     if: github.ref == 'refs/heads/main'
     
     permissions:
@@ -73,6 +73,9 @@ jobs:
           type=sha,prefix={{branch}}-
           type=raw,value=latest,enable={{is_default_branch}}
           
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
       with:
@@ -81,11 +84,12 @@ jobs:
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
         cache-from: type=gha
-        cache-to: type=gha,mode=max
+        cache-to: type=gha
+        platforms: linux/amd64
 
   deploy:
     needs: build-and-push
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     if: github.ref == 'refs/heads/main'
     
     steps:

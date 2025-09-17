@@ -248,18 +248,18 @@ git push origin v1.0.0
 
 빌드된 이미지는 GitHub Container Registry에서 확인할 수 있습니다:
 ```
-ghcr.io/brighr93/k8s-dashboard-api:latest
-ghcr.io/brighr93/k8s-dashboard-api:main
-ghcr.io/brighr93/k8s-dashboard-api:v1.0.0
+ghcr.io/{your-username}/k8s-dashboard-api:latest
+ghcr.io/{your-username}/k8s-dashboard-api:main
+ghcr.io/{your-username}/k8s-dashboard-api:v1.0.0
 ```
 
 ### 로컬에서 Docker 이미지 사용
 ```bash
 # GitHub Container Registry에서 이미지 가져오기
-docker pull ghcr.io/brighr93/k8s-dashboard-api:latest
+docker pull ghcr.io/{your-username}/k8s-dashboard-api:latest
 
 # 이미지 실행
-docker run -p 8000:8000 -e K8S_TOKEN=your-token ghcr.io/brighr93/k8s-dashboard-api:latest
+docker run -p 8000:8000 -e K8S_TOKEN=your-token ghcr.io/{your-username}/k8s-dashboard-api:latest
 ```
 
 ## 테스트
