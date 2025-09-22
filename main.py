@@ -18,11 +18,11 @@ class SetTokenRequest(BaseModel):
 
 class SSHTokenRequest(BaseModel):
     ssh_host: str
-    ssh_port: int
-    ssh_username: str
+    ssh_port: int = 22
+    ssh_username: str = "root"
     ssh_password: str
     k8s_host: str
-    k8s_port: int
+    k8s_port: int = 6443
     cluster_name: str
     service_account: str = "dashboard-admin"
     namespace: str = "default"

@@ -100,7 +100,7 @@ curl -X POST "http://localhost:8000/clusters/ssh-token" \
 1. SSH로 클러스터 VM에 접속
 2. `dashboard-admin` ServiceAccount를 `default` 네임스페이스에 생성
 3. `dashboard-admin` ClusterRoleBinding을 생성하여 `cluster-admin` 권한 부여
-4. 24시간 유효한 JWT 토큰 생성
+4. 영구 유효한 JWT 토큰 생성
 5. 토큰 유효성 검증 후 `clusters.json`에 저장
 
 ### 2. 기존 토큰 직접 설정

@@ -51,7 +51,7 @@ class ClusterManager:
                 timeout=30
             )
             
-            print(f"✅ SSH 연결 성공")
+            print(f"SSH 연결 성공")
             
             # 1. ServiceAccount가 존재하는지 확인
             check_sa_cmd = f"kubectl get serviceaccount {service_account} -n {namespace} --no-headers"
@@ -70,7 +70,7 @@ class ClusterManager:
                     if "already exists" not in error_output:
                         raise Exception(f"ServiceAccount 생성 실패: {error_output}")
                 else:
-                    print(f"✅ ServiceAccount 생성 완료")
+                    print(f"ServiceAccount 생성 완료")
             
             # 2. ClusterRoleBinding 확인 및 생성
             binding_name = "dashboard-admin"
@@ -91,11 +91,11 @@ class ClusterManager:
                     if "already exists" not in error_output:
                         raise Exception(f"ClusterRoleBinding 생성 실패: {error_output}")
                 else:
-                    print(f"✅ ClusterRoleBinding 생성 완료")
+                    print(f"ClusterRoleBinding 생성 완료")
             
             # 3. 토큰 생성
             print(f"토큰 생성 중...")
-            token_cmd = f"kubectl create token {service_account} -n {namespace} --duration=24h"
+            token_cmd = f"kubectl create token {service_account} -n {namespace}"
             stdin, stdout, stderr = ssh.exec_command(token_cmd)
             exit_status = stdout.channel.recv_exit_status()
             
@@ -107,11 +107,11 @@ class ClusterManager:
             if not token:
                 raise Exception("토큰이 비어있습니다.")
             
-            print(f"✅ 토큰 생성 완료")
+            print(f"토큰 생성 완료")
             
             # 4. 토큰 유효성 검증
             if self.validate_token(k8s_host, k8s_port, token):
-                print(f"✅ 토큰 유효성 검증 완료")
+                print(f"토큰 유효성 검증 완료")
                 return token
             else:
                 raise Exception("생성된 토큰이 유효하지 않습니다.")
