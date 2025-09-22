@@ -130,8 +130,55 @@ curl -X GET http://localhost:8000/deployments/{namespace}
 # 특정 Deployment 조회
 curl -X GET http://localhost:8000/deployments/{namespace}/{deployment-name}
 
-# Deployment 재시작
+# Deployment 상태 조회
+curl -X GET http://localhost:8000/deployments/{namespace}/{deployment-name}/status
+
+# Deployment 재시작 (즉시 반환)
 curl -X POST http://localhost:8000/deployments/{namespace}/{deployment-name}/restart
+
+# Deployment 재시작 및 모니터링 (권장)
+curl -X POST "http://localhost:8000/deployments/{namespace}/{deployment-name}/rollout?timeout=30"
+```
+
+### API 응답 예시
+
+#### Rollout 성공 응답
+```json
+{
+  "status": "success",
+  "message": "Rollout 완료",
+  "replicas": {
+    "spec": 3,
+    "ready": 3,
+    "available": 3
+  },
+  "duration": 12.5
+}
+```
+
+#### Rollout 타임아웃 응답
+```json
+{
+  "status": "timeout",
+  "message": "Rollout이 30초 내에 완료되지 않았습니다",
+  "duration": 30
+}
+```
+
+#### Deployment 상태 응답
+```json
+{
+  "name": "my-app",
+  "namespace": "default",
+  "replicas": {
+    "spec": 3,
+    "ready": 3,
+    "available": 3,
+    "unavailable": 0
+  },
+  "conditions": [...],
+  "updated_at": 3
+}
 ```
 
 ### Service 관리
@@ -160,13 +207,13 @@ curl -X GET http://localhost:8000/nodes/{node-name}
 
 ## 보안 주의사항
 
-### 🔒 민감정보 보호
+### 민감정보 보호
 - **환경변수 사용**: 하드코딩 금지
 - **Git 제외**: `.env`, `secrets/` 폴더는 Git에 포함하지 않음
 - **파일 권한**: 민감정보 파일은 600 권한 설정
 - **토큰 관리**: Kubernetes 토큰은 환경변수로만 관리
 
-### 🛡️ 보안 설정
+### 보안 설정
 - **SSL 인증서**: 프로덕션에서는 검증 활성화
 - **RBAC 권한**: 최소 권한 원칙 적용
 - **네트워크 보안**: 
@@ -174,7 +221,7 @@ curl -X GET http://localhost:8000/nodes/{node-name}
   - Docker: `HOST=0.0.0.0` (컨테이너 외부 접근을 위해 필요)
   - 프로덕션: 방화벽과 리버스 프록시 사용 권장
 
-### 🔐 민감정보 설정 방법
+### 민감정보 설정 방법
 ```bash
 # 1. 자동 설정 (권장)
 ./scripts/setup-secrets.sh
