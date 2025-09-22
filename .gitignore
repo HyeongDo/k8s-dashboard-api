@@ -78,6 +78,7 @@ config/.env
 .env.production
 .env.*
 !.env.example
+config/clusters.json
 
 # Secrets
 secrets/
