@@ -19,85 +19,18 @@
 - **DaemonSet 롤아웃**: DaemonSet 재시작 및 상태 모니터링
 - **StatefulSet 롤아웃**: StatefulSet 재시작 및 상태 모니터링
 
-### 다중 클러스터 지원
-- **클러스터 토큰 생성**: ID, PW, Port로 클러스터 토큰 자동 생성
-- **클러스터 관리**: 여러 클러스터 설정 저장 및 관리
-- **동적 클러스터 선택**: API 호출 시 클러스터 ID로 선택 가능
+### 클러스터 관리
+- **SSH 토큰 생성**: SSH를 통해 클러스터 VM에 접속하여 토큰 자동 생성
+- **토큰 직접 설정**: 기존 토큰을 직접 설정
+- **동적 기본 클러스터**: 가장 최근 설정된 클러스터를 기본으로 사용
+- **다중 클러스터 지원**: 여러 클러스터 설정 저장 및 관리
 
 ## 사전 요구사항
 
 - Python 3.8+
 - Kubernetes 클러스터 접근 권한
+- SSH 접근 권한 (토큰 생성 시)
 - Kubernetes API 서버 접근 가능한 네트워크
-
-## API 사용법
-
-### 클러스터 토큰 생성 및 저장
-
-API는 자동으로 다음 과정을 수행합니다:
-
-1. **ServiceAccount 생성**: `dashboard-admin` ServiceAccount를 `kubernetes-dashboard` 네임스페이스에 생성
-2. **ClusterRoleBinding 생성**: `dashboard-admin` ClusterRoleBinding을 생성하여 `cluster-admin` 권한 부여
-3. **토큰 발급**: Kubernetes 1.24+ 방식으로 토큰 생성
-
-```bash
-# 클러스터 토큰 생성 및 저장
-curl -X POST "http://localhost:8000/clusters/token" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "host": "your-k8s-api-server",
-    "port": 6443,
-    "username": "your-username",
-    "password": "your-password",
-    "cluster_name": "production"
-  }'
-```
-
-**참고**: 
-- `username`과 `password`는 클러스터에 admin 권한이 있는 사용자 계정이어야 합니다.
-- API는 자동으로 `kubernetes-dashboard` 네임스페이스에 `dashboard-admin` ServiceAccount를 생성합니다.
-- 생성된 토큰은 24시간 동안 유효합니다.
-- 이미 존재하는 ServiceAccount나 ClusterRoleBinding이 있으면 재사용합니다.
-
-### 클러스터 목록 조회
-
-```bash
-# 저장된 클러스터 목록 조회
-curl -X GET "http://localhost:8000/clusters"
-```
-
-### 조회 API 사용 예시
-
-```bash
-# 모든 네임스페이스 조회 (기본 클러스터)
-curl -X GET "http://localhost:8000/namespaces"
-
-# 특정 클러스터의 네임스페이스 조회
-curl -X GET "http://localhost:8000/namespaces?cluster_id=production"
-
-# 특정 네임스페이스의 Pod 조회
-curl -X GET "http://localhost:8000/pods/kube-system?cluster_id=production"
-```
-
-### 롤아웃 API 사용 예시
-
-```bash
-# Deployment 롤아웃
-curl -X POST "http://localhost:8000/deployments/kube-system/nginx-deployment/rollout?cluster_id=production"
-
-# DaemonSet 롤아웃
-curl -X POST "http://localhost:8000/daemonsets/kube-system/fluentd/rollout?cluster_id=production"
-
-# StatefulSet 롤아웃
-curl -X POST "http://localhost:8000/statefulsets/default/mysql/rollout?cluster_id=production"
-```
-
-### 삭제 API 사용 예시
-
-```bash
-# Pod 삭제
-curl -X DELETE "http://localhost:8000/pods/default/nginx-pod?cluster_id=production"
-```
 
 ## 설치 및 실행
 
@@ -143,21 +76,90 @@ python3 main.py
 
 서버가 실행되면 `http://localhost:8000`에서 API에 접근할 수 있습니다.
 
-### 3. 클러스터 설정
+## API 사용법
 
-애플리케이션 실행 후 클러스터 토큰을 생성하고 저장해야 합니다:
+### 1. SSH를 통한 클러스터 토큰 생성
+
+SSH를 통해 클러스터 VM에 접속하여 토큰을 자동 생성합니다:
 
 ```bash
-# 클러스터 토큰 생성 및 저장
-curl -X POST "http://localhost:8000/clusters/token" \
+curl -X POST "http://localhost:8000/clusters/ssh-token" \
   -H "Content-Type: application/json" \
   -d '{
-    "host": "your-k8s-api-server",
-    "port": 6443,
-    "username": "your-username", 
-    "password": "your-password",
+    "ssh_host": "192.168.1.100",
+    "ssh_port": 22,
+    "ssh_username": "ubuntu",
+    "ssh_password": "your_password",
+    "k8s_host": "192.168.1.100",
+    "k8s_port": 6443,
     "cluster_name": "production"
   }'
+```
+
+**자동 생성 과정:**
+1. SSH로 클러스터 VM에 접속
+2. `dashboard-admin` ServiceAccount를 `default` 네임스페이스에 생성
+3. `dashboard-admin` ClusterRoleBinding을 생성하여 `cluster-admin` 권한 부여
+4. 24시간 유효한 JWT 토큰 생성
+5. 토큰 유효성 검증 후 `clusters.json`에 저장
+
+### 2. 기존 토큰 직접 설정
+
+이미 가지고 있는 유효한 토큰을 직접 설정합니다:
+
+```bash
+curl -X POST "http://localhost:8000/clusters/set-token" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "cluster_id": "production",
+    "token": "eyJhbGciOiJSUzI1NiIs...",
+    "host": "192.168.1.100",
+    "port": 6443,
+    "verify_ssl": false
+  }'
+```
+
+### 3. 클러스터 목록 조회
+
+```bash
+# 저장된 클러스터 목록 조회
+curl -X GET "http://localhost:8000/clusters"
+
+# 특정 클러스터 정보 조회
+curl -X GET "http://localhost:8000/clusters/production"
+```
+
+### 4. 조회 API 사용 예시
+
+```bash
+# 기본 클러스터로 조회 (가장 최근 설정된 클러스터)
+curl -X GET "http://localhost:8000/namespaces"
+
+# 특정 클러스터로 조회
+curl -X GET "http://localhost:8000/namespaces?cluster_id=production"
+
+# 특정 네임스페이스의 Pod 조회
+curl -X GET "http://localhost:8000/pods/kube-system?cluster_id=production"
+```
+
+### 5. 롤아웃 API 사용 예시
+
+```bash
+# Deployment 롤아웃
+curl -X POST "http://localhost:8000/deployments/kube-system/nginx-deployment/rollout?cluster_id=production"
+
+# DaemonSet 롤아웃
+curl -X POST "http://localhost:8000/daemonsets/kube-system/fluentd/rollout?cluster_id=production"
+
+# StatefulSet 롤아웃
+curl -X POST "http://localhost:8000/statefulsets/default/mysql/rollout?cluster_id=production"
+```
+
+### 6. 삭제 API 사용 예시
+
+```bash
+# Pod 삭제
+curl -X DELETE "http://localhost:8000/pods/default/nginx-pod?cluster_id=production"
 ```
 
 ## API 엔드포인트
@@ -169,10 +171,10 @@ curl -X POST "http://localhost:8000/clusters/token" \
 
 ### 클러스터 관리
 
-- `POST /clusters/token`: 클러스터 토큰 생성 및 저장
+- `POST /clusters/ssh-token`: SSH를 통한 클러스터 토큰 생성 및 저장
+- `POST /clusters/set-token`: 기존 토큰 직접 설정
 - `GET /clusters`: 저장된 클러스터 목록 조회
 - `GET /clusters/{cluster_id}`: 특정 클러스터 정보 조회
-- `DELETE /clusters/{cluster_id}`: 클러스터 설정 삭제
 
 ### 조회 API
 
@@ -248,31 +250,68 @@ curl -X POST "http://localhost:8000/clusters/token" \
 ```json
 {
   "status": "success",
-  "message": "클러스터 'production' 토큰이 생성되고 저장되었습니다."
+  "message": "SSH를 통해 클러스터 'production' 토큰이 생성되고 저장되었습니다.",
+  "ssh_host": "192.168.1.100",
+  "k8s_host": "192.168.1.100"
 }
 ```
+
+## 동적 기본 클러스터
+
+API는 가장 최근에 설정된 클러스터를 기본값으로 사용합니다:
+
+- `cluster_id` 파라미터를 지정하지 않으면 자동으로 마지막에 설정된 클러스터 사용
+- 명시적으로 `cluster_id`를 지정하면 해당 클러스터 사용
+- 클러스터 설정 순서에 따라 기본 클러스터가 동적으로 변경됨
 
 ## 보안 고려사항
 
 1. **토큰 보안**: 클러스터 토큰은 `config/clusters.json` 파일에 저장되므로 파일 권한을 적절히 설정하세요.
 2. **네트워크 보안**: 프로덕션 환경에서는 HTTPS를 사용하고 적절한 인증을 구현하세요.
-3. **권한 관리**: 최소 권한 원칙에 따라 필요한 권한만 부여하세요.
+3. **SSH 보안**: SSH 접근 시 강력한 비밀번호나 SSH 키를 사용하세요.
+4. **권한 관리**: 최소 권한 원칙에 따라 필요한 권한만 부여하세요.
 
 ## 문제 해결
 
 ### 일반적인 문제
 
 1. **클러스터 연결 실패**: 클러스터 API 서버 주소와 포트가 올바른지 확인하세요.
-2. **토큰 생성 실패**: 사용자명과 비밀번호가 올바른지 확인하세요.
-3. **권한 부족**: 토큰에 필요한 권한이 있는지 확인하세요.
+2. **SSH 연결 실패**: SSH 호스트, 포트, 사용자명, 비밀번호가 올바른지 확인하세요.
+3. **토큰 생성 실패**: 클러스터에 kubectl이 설치되어 있고 권한이 있는지 확인하세요.
+4. **권한 부족**: 토큰에 필요한 권한이 있는지 확인하세요.
+
+## Docker 지원
+
+### Docker로 실행
+
+```bash
+# 이미지 빌드
+docker build -t k8s-dashboard-api .
+
+# 컨테이너 실행
+docker run -p 8000:8000 k8s-dashboard-api
+```
+
+### Docker Compose로 실행
+
+```bash
+# 서비스 시작
+docker-compose up -d
+
+# 서비스 중지
+docker-compose down
+```
 
 ## 변경 이력
 
 ### v2.0.0
-- 다중 클러스터 지원 추가
+- SSH를 통한 클러스터 토큰 자동 생성 기능 추가
+- 기존 토큰 직접 설정 기능 추가
+- 동적 기본 클러스터 지원
+- 다중 클러스터 지원
 - API 간소화 (조회, 삭제, 롤아웃)
-- 클러스터 토큰 자동 생성 기능
 - DaemonSet, StatefulSet 지원 추가
+- Docker 지원 추가
 
 ### v1.0.0
 - 초기 버전
